@@ -183,7 +183,7 @@ public class JettyHttpConnector extends AbstractConnector
             {
                 // override only if user hasn't specified one (turn off file-mapped buffer for
                 // static files to avoid resource locking, makes webapp resources editable on the fly)
-                final URL muleDefaults = ClassUtils.getResource("org/mule/transport/jetty/webdefault.xml", getClass());
+                final URL muleDefaults = ClassUtils.getResource("org/mule/transport/jetty/webdefault.xml", getClass().getClassLoader());
                 webAppProvider.setDefaultsDescriptor(muleDefaults.toExternalForm());
             }
 
