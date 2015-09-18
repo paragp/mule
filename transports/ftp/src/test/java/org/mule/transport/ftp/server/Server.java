@@ -67,7 +67,7 @@ public class Server
     private void setupUserManagerFactory(FtpServerFactory serverFactory) throws IOException
     {
         PropertiesUserManagerFactory userManagerFactory = new PropertiesUserManagerFactory();
-        URL usersFile = IOUtils.getResourceAsUrl("users.properties", getClass());
+        URL usersFile = IOUtils.getResourceAsUrl("users.properties", getClass().getClassLoader());
         if (usersFile == null)
         {
             throw new IOException("users.properties file not found in the classpath");

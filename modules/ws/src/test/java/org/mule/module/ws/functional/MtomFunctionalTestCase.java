@@ -90,7 +90,7 @@ public class MtomFunctionalTestCase extends AbstractWSConsumerFunctionalTestCase
 
     private void addAttachment(MuleMessage message, String fileName, String attachmentId) throws Exception
     {
-        File file = new File(IOUtils.getResourceAsUrl(fileName, getClass()).getPath());
+        File file = new File(IOUtils.getResourceAsUrl(fileName, getClass().getClassLoader()).getPath());
         DataHandler dh = new DataHandler(new FileDataSource(file));
         message.addOutboundAttachment(attachmentId, dh);
     }
