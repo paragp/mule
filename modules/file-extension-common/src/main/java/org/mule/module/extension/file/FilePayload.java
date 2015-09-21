@@ -6,6 +6,7 @@
  */
 package org.mule.module.extension.file;
 
+import java.io.InputStream;
 import java.time.LocalDateTime;
 
 public interface FilePayload
@@ -26,7 +27,7 @@ public interface FilePayload
 
     String getPath();
 
-    FilePayload getDirectory();
-
     String getFilename();
+
+    InputStream getContent();
 }

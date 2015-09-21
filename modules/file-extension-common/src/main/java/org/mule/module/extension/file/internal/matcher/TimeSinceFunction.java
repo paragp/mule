@@ -4,15 +4,16 @@
  * license, a copy of which has been included with this distribution in the
  * LICENSE.txt file.
  */
-package org.mule.module.extension.file.matcher;
+package org.mule.module.extension.file.internal.matcher;
 
-import java.nio.file.attribute.FileTime;
+import java.time.LocalDateTime;
+import java.util.function.BiFunction;
 
-public class FileTimeAfterFunction extends MatcherFunction<FileTime>
+public final class TimeSinceFunction implements BiFunction<LocalDateTime, LocalDateTime, Boolean>
 {
 
     @Override
-    protected boolean test(FileTime criteria, FileTime value)
+    public Boolean apply(LocalDateTime criteria, LocalDateTime value)
     {
         return value.compareTo(criteria) >=0;
     }
