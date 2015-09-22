@@ -4,12 +4,15 @@
  * license, a copy of which has been included with this distribution in the
  * LICENSE.txt file.
  */
-package org.mule.module.extension.file;
+package org.mule.extension.file.internal;
 
-public interface FileSystem
+import org.mule.module.extension.DescriberSupport;
+
+public class FileConnectorDescriber extends DescriberSupport
 {
 
-    FilePayload read(String path);
-
-    void delete(String path);
+    public FileConnectorDescriber()
+    {
+        super(FileConnector.class);
+    }
 }

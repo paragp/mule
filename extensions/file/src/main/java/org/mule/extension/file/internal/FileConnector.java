@@ -56,7 +56,7 @@ public class FileConnector implements Initialisable
         if (defaultEncoding == null)
         {
             defaultEncoding = muleContext.getConfiguration().getDefaultEncoding();
-            if (defaultEncoding != null)
+            if (defaultEncoding == null)
             {
                 throw new InitialisationException(createStaticMessage("Could not obtain default encoding. Please provide a explicit value for the defaultEncoding parameter"), this);
             }
@@ -85,11 +85,11 @@ public class FileConnector implements Initialisable
         Path baseDirPath = Paths.get(baseDir);
         if (Files.notExists(baseDirPath))
         {
-            throw new InitialisationException(createStaticMessage(format("Provided baseDir '%s' does not exists")), this);
+            throw new InitialisationException(createStaticMessage(format("Provided baseDir '%s' does not exists", baseDirPath.toAbsolutePath())), this);
         }
         if (!Files.isDirectory(baseDirPath))
         {
-            throw new InitialisationException(createStaticMessage(format("Provided baseDir '%s' is not a directory")), this);
+            throw new InitialisationException(createStaticMessage(format("Provided baseDir '%s' is not a directory", baseDirPath.toAbsolutePath())), this);
         }
     }
 

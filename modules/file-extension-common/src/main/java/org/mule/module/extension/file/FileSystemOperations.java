@@ -7,20 +7,21 @@
 package org.mule.module.extension.file;
 
 import org.mule.extension.annotation.api.Operation;
-import org.mule.extension.annotation.api.ParameterGroup;
 import org.mule.extension.annotation.api.param.Connection;
-import org.mule.extension.annotation.api.param.Optional;
 
 public class FileSystemOperations
 {
 
     @Operation
-    public FilePayload read(@Connection FileSystem fileSystem,
-                            String path,
-                            @Optional(defaultValue = "false") Boolean lock,
-                            FileNotExistsPolicy notExistsPolicy,
-                            @ParameterGroup ContentType contentType) {
+    public FilePayload read(@Connection FileSystem fileSystem, String path)
+    {
+        //TODO: support encoding and mimeType
+        return fileSystem.read(path);
+    }
 
-        return fileSystem.read(path, lock, notExistsPolicy, contentType);
+    @Operation
+    public void delete(@Connection FileSystem fileSystem, String path)
+    {
+        fileSystem.delete(path);
     }
 }
