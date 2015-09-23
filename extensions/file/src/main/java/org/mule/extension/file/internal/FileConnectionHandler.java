@@ -8,7 +8,7 @@ package org.mule.extension.file.internal;
 
 import org.mule.extension.api.connection.ConnectionHandler;
 
-public class FileConnectionHandler implements ConnectionHandler<FileConnector, LocalFileSystem>
+public final class FileConnectionHandler implements ConnectionHandler<FileConnector, LocalFileSystem>
 {
 
     @Override

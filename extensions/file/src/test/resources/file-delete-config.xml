@@ -7,14 +7,6 @@
 
     <file:config name="file" baseDir="${baseDir}" />
 
-    <flow name="read">
-        <file:read path="files/hello.txt" />
-    </flow>
-
-    <flow name="readUnexisting">
-        <file:read path="files/not-there.txt" />
-    </flow>
-
     <flow name="delete">
         <file:delete path="#[delete]" />
     </flow>

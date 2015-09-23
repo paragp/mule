@@ -8,6 +8,8 @@ package org.mule.extension.file.internal;
 
 import static org.mule.config.i18n.MessageFactory.createStaticMessage;
 import org.mule.api.MuleRuntimeException;
+import org.mule.extension.file.internal.lock.NullPathLock;
+import org.mule.extension.file.internal.lock.PathLock;
 import org.mule.module.extension.file.FilePayload;
 
 import java.io.Closeable;
@@ -20,19 +22,24 @@ import java.nio.file.attribute.FileTime;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-import org.apache.commons.io.input.ReaderInputStream;
-
-public class LocalFilePayload implements FilePayload, Closeable
+public final class LocalFilePayload implements FilePayload, Closeable
 {
 
     private final Path path;
+    private final PathLock lock;
 
     private BasicFileAttributes attributes = null;
     private InputStream content;
 
-    public LocalFilePayload(Path path)
+    LocalFilePayload(Path path)
+    {
+        this(path, new NullPathLock());
+    }
+
+    public LocalFilePayload(Path path, PathLock lock)
     {
         this.path = path;
+        this.lock = lock;
     }
 
     @Override
@@ -96,7 +103,7 @@ public class LocalFilePayload implements FilePayload, Closeable
         {
             try
             {
-                content = new ReaderInputStream(Files.newBufferedReader(path));
+                content = new FileInputStream(Files.newBufferedReader(path), lock);
             }
             catch (Exception e)
             {
@@ -110,10 +117,27 @@ public class LocalFilePayload implements FilePayload, Closeable
     @Override
     public synchronized void close() throws IOException
     {
+        try
+        {
+            closeStream();
+        }
+        finally
+        {
+            lock.release();
+        }
+    }
+
+    private void closeStream() throws IOException
+    {
         if (content != null)
         {
             content.close();
         }
+    }
+
+    public boolean isLocked()
+    {
+        return lock.isLocked();
     }
 
     private synchronized BasicFileAttributes getAttributes()

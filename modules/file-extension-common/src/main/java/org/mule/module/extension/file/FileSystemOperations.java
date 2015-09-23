@@ -8,15 +8,31 @@ package org.mule.module.extension.file;
 
 import org.mule.extension.annotation.api.Operation;
 import org.mule.extension.annotation.api.param.Connection;
+import org.mule.extension.annotation.api.param.Optional;
+
+import java.io.InputStream;
 
 public class FileSystemOperations
 {
 
     @Operation
-    public FilePayload read(@Connection FileSystem fileSystem, String path)
+    public FilePayload read(@Connection FileSystem fileSystem,
+                            String path,
+                            @Optional(defaultValue = "false") boolean lock)
     {
         //TODO: support encoding and mimeType
-        return fileSystem.read(path);
+        return fileSystem.read(path, lock);
+    }
+
+    @Operation
+    public void write(@Connection FileSystem fileSystem,
+                      String path,
+                      @Optional(defaultValue = "#[payload]") InputStream content,
+                      @Optional(defaultValue = "THROW_EXCEPTION") FileWriteMode mode,
+                      @Optional(defaultValue = "false") boolean lock,
+                      @Optional(defaultValue = "false") boolean createParentFolder)
+    {
+        fileSystem.write(path, content, mode, lock, createParentFolder);
     }
 
     @Operation

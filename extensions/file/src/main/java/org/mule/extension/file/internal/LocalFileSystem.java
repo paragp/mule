@@ -6,28 +6,33 @@
  */
 package org.mule.extension.file.internal;
 
-import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.mule.config.i18n.MessageFactory.createStaticMessage;
 import org.mule.api.MuleRuntimeException;
+import org.mule.extension.file.internal.lock.DefaultPathLock;
+import org.mule.extension.file.internal.lock.NullPathLock;
+import org.mule.extension.file.internal.lock.PathLock;
 import org.mule.module.extension.file.FilePayload;
 import org.mule.module.extension.file.FileSystem;
+import org.mule.module.extension.file.FileWriteMode;
 import org.mule.util.FileUtils;
 import org.mule.util.IOUtils;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LocalFileSystem implements FileSystem
+final class LocalFileSystem implements FileSystem
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalFileSystem.class);
@@ -40,7 +45,7 @@ public class LocalFileSystem implements FileSystem
     }
 
     @Override
-    public FilePayload read(String filePath)
+    public FilePayload read(String filePath, boolean lock)
     {
         Path path = getExistingPath(filePath);
         if (Files.isDirectory(path))
@@ -48,7 +53,48 @@ public class LocalFileSystem implements FileSystem
             throw new IllegalArgumentException(String.format("Cannot read path '%s' since it's a directory", path));
         }
 
-        return new LocalFilePayload(path);
+        if (lock)
+        {
+            return new LocalFilePayload(path, lock(path));
+        }
+        else
+        {
+            verifyNotLocked(path);
+            return new LocalFilePayload(path);
+        }
+    }
+
+    @Override
+    public void write(String filePath, InputStream content, FileWriteMode mode, boolean lock, boolean createParentFolder)
+    {
+        Path path = getPath(filePath);
+
+        assureParentFolderExists(path, createParentFolder);
+
+        final OpenOption[] openOptions = mode.getOpenOptions();
+        PathLock pathLock;
+        if (lock)
+        {
+            pathLock = lock(path, openOptions);
+        }
+        else
+        {
+            pathLock = new NullPathLock();
+            verifyNotLocked(path);
+        }
+
+        try (OutputStream out = Files.newOutputStream(path, openOptions))
+        {
+            IOUtils.copyLarge(content, out);
+        }
+        catch (Exception e)
+        {
+            throw exception(String.format("Exception was found writing to file '%s'", path), e);
+        }
+        finally
+        {
+            pathLock.release();
+        }
     }
 
     @Override
@@ -57,12 +103,9 @@ public class LocalFileSystem implements FileSystem
         Path path = getExistingPath(filePath);
 
         LOGGER.debug("Preparing to delete '{}'", path);
-        if (isLocked(path, READ, WRITE))
-        {
-            throw new IllegalStateException(String.format("Cannot delete '%s' because it's locked by another process", path));
-        }
 
-        LOGGER.debug("file '{}' deleted", path);
+        verifyNotLocked(path);
+
         try
         {
             if (Files.isDirectory(path))
@@ -84,13 +127,35 @@ public class LocalFileSystem implements FileSystem
 
     private Path getExistingPath(String filePath)
     {
-        Path path = Paths.get(config.getBaseDir()).resolve(filePath);
+        Path path = getPath(filePath);
         if (Files.notExists(path))
         {
             throw pathNotFoundException(path);
         }
 
-        return path.toAbsolutePath();
+        return path;
+    }
+
+    private Path getPath(String filePath)
+    {
+        return Paths.get(config.getBaseDir()).resolve(filePath).toAbsolutePath();
+    }
+
+    private PathLock lock(Path path)
+    {
+        return lock(path, WRITE);
+    }
+
+    private PathLock lock(Path path, OpenOption... openOptions)
+    {
+        try
+        {
+            return DefaultPathLock.lock(path, openOptions);
+        }
+        catch (Exception e)
+        {
+            throw exception(String.format("Could not lock file '%s' because it's already owner by another process", path), e);
+        }
     }
 
     /**
@@ -98,15 +163,13 @@ public class LocalFileSystem implements FileSystem
      * quick check to see if another process is still holding onto the file, e.g. a
      * large file (more than 100MB) is still being written to.
      */
-    private boolean isLocked(Path path, OpenOption... openOptions)
+    private boolean isLocked(Path path)
     {
-        FileChannel channel = null;
-        FileLock lock = null;
+        PathLock lock = null;
         try
         {
-            channel = FileChannel.open(path, openOptions);
-            lock = channel.tryLock();
-            return lock != null ? !lock.isValid() : true;
+            lock = DefaultPathLock.lock(path, StandardOpenOption.WRITE);
+            return !lock.isLocked();
         }
         catch (IOException e)
         {
@@ -122,22 +185,44 @@ public class LocalFileSystem implements FileSystem
         {
             if (lock != null)
             {
-                try
-                {
-                    lock.release();
-                }
-                catch (IOException e)
-                {
-                    // ignore
-                }
+                lock.release();
             }
-            IOUtils.closeQuietly(channel);
         }
     }
 
-    private RuntimeException exception(String message, Exception e)
+    private void verifyNotLocked(Path path)
     {
-        return new MuleRuntimeException(createStaticMessage(message), e);
+        if (isLocked(path))
+        {
+            throw new IllegalStateException(String.format("File '%s' is locked by another process", path));
+        }
+    }
+
+    private void assureParentFolderExists(Path path, boolean createParentFolder)
+    {
+        if (Files.exists(path))
+        {
+            return;
+        }
+
+        File parentFolder = path.getParent().toFile();
+        if (!parentFolder.exists())
+        {
+            if (createParentFolder)
+            {
+                parentFolder.mkdirs();
+            }
+            else
+            {
+                throw new IllegalArgumentException(String.format("Cannot write to file '%s' because path to it doesn't exist", path));
+            }
+        }
+    }
+
+
+    private RuntimeException exception(String message, Exception cause)
+    {
+        return new MuleRuntimeException(createStaticMessage(message), cause);
     }
 
     private RuntimeException pathNotFoundException(Path path)

@@ -6,10 +6,14 @@
  */
 package org.mule.module.extension.file;
 
+import java.io.InputStream;
+
 public interface FileSystem
 {
 
-    FilePayload read(String path);
+    FilePayload read(String filePath, boolean lock);
 
-    void delete(String path);
+    void write(String filePath, InputStream content, FileWriteMode mode, boolean lock, boolean createParentFolder);
+
+    void delete(String filePath);
 }

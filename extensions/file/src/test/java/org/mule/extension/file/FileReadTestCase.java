@@ -10,12 +10,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import org.mule.api.MuleEvent;
+import org.mule.extension.file.internal.LocalFilePayload;
 import org.mule.module.extension.file.FilePayload;
-import org.mule.util.FileUtils;
 import org.mule.util.IOUtils;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,19 +24,20 @@ import java.time.ZoneId;
 
 import org.junit.Test;
 
-public class FileConnectorOperationsTestCase extends FileConnectorTestCase
+public class FileReadTestCase extends FileConnectorTestCase
 {
 
     @Override
     protected String getConfigFile()
     {
-        return "file-operations-config.xml";
+        return "file-read-config.xml";
     }
 
     @Test
     public void read() throws Exception
     {
-        FilePayload payload = getFilePayload();
+        LocalFilePayload payload = readHelloWorld();
+        assertThat(payload.isLocked(), is(false));
         assertThat(IOUtils.toString(payload.getContent()), is(HELLO_WORLD));
     }
 
@@ -46,13 +45,38 @@ public class FileConnectorOperationsTestCase extends FileConnectorTestCase
     public void readUnexisting() throws Exception
     {
         expectedException.expectCause(instanceOf(IllegalArgumentException.class));
-        runFlow("readUnexisting");
+        readPath("files/not-there.txt");
+    }
+
+    @Test
+    public void readDirectory() throws Exception
+    {
+        expectedException.expectCause(instanceOf(IllegalArgumentException.class));
+        readPath("files");
+    }
+
+    @Test
+    public void readLockReleasedOnContentConsumed() throws Exception
+    {
+        LocalFilePayload payload = readWithLock();
+        IOUtils.toString(payload.getContent());
+
+        assertThat(payload.isLocked(), is(false));
+    }
+
+    @Test
+    public void readLockReleasedOnEarlyClose() throws Exception
+    {
+        LocalFilePayload payload = readWithLock();
+        payload.close();
+
+        assertThat(payload.isLocked(), is(false));
     }
 
     @Test
     public void getProperties() throws Exception
     {
-        FilePayload filePayload = getFilePayload();
+        FilePayload filePayload = readHelloWorld();
         Path file = Paths.get(baseDir.getValue()).resolve("files/hello.txt");
         assertExists(true, file.toFile());
 
@@ -69,52 +93,12 @@ public class FileConnectorOperationsTestCase extends FileConnectorTestCase
         assertThat(filePayload.getFilename(), is(file.getFileName().toString()));
     }
 
-    @Test
-    public void deleteFile() throws Exception
+    private LocalFilePayload readWithLock() throws Exception
     {
-        File file = temporaryFolder.newFile();
-        assertExists(true, file);
+        LocalFilePayload payload = (LocalFilePayload) runFlow("readWithLock").getMessage().getPayload();
+        assertThat(payload.isLocked(), is(true));
 
-        MuleEvent event = getTestEvent("");
-        event.setFlowVariable("delete", file.getAbsolutePath());
-        runFlow("delete", event);
-
-        assertExists(false, file);
-    }
-
-    @Test
-    public void deleteFolder() throws Exception
-    {
-        File directory = temporaryFolder.newFolder();
-        File child = new File(directory, "file");
-        FileUtils.write(child, "child");
-
-        File subFolder = new File(directory, "subfolder");
-        subFolder.mkdir();
-        File grandChild = new File(subFolder, "grandChild");
-        FileUtils.write(grandChild, "grandChild");
-
-        assertExists(true, child, subFolder, grandChild);
-
-        MuleEvent event = getTestEvent("");
-        event.setFlowVariable("delete", directory.getAbsolutePath());
-        runFlow("delete", event);
-
-        assertExists(false, directory, child, subFolder, grandChild);
-    }
-
-    private void assertExists(boolean exists, File... files)
-    {
-        for (File file : files)
-        {
-            assertThat(file.exists(), is(exists));
-        }
-    }
-
-    private FilePayload getFilePayload() throws Exception
-    {
-        MuleEvent event = runFlow("read");
-        return (FilePayload) event.getMessage().getPayload();
+        return payload;
     }
 
     private void assertTime(LocalDateTime dateTime, FileTime fileTime)
