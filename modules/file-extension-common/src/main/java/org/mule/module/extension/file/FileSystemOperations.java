@@ -6,11 +6,11 @@
  */
 package org.mule.module.extension.file;
 
+import org.mule.api.MuleEvent;
 import org.mule.extension.annotation.api.Operation;
 import org.mule.extension.annotation.api.param.Connection;
 import org.mule.extension.annotation.api.param.Optional;
-
-import java.io.InputStream;
+import org.mule.transport.NullPayload;
 
 public class FileSystemOperations
 {
@@ -27,12 +27,18 @@ public class FileSystemOperations
     @Operation
     public void write(@Connection FileSystem fileSystem,
                       String path,
-                      @Optional(defaultValue = "#[payload]") InputStream content,
-                      @Optional(defaultValue = "THROW_EXCEPTION") FileWriteMode mode,
+                      @Optional(defaultValue = "#[payload]") Object content,
+                      @Optional(defaultValue = "OVERWRITE") FileWriteMode mode,
                       @Optional(defaultValue = "false") boolean lock,
-                      @Optional(defaultValue = "false") boolean createParentFolder)
+                      @Optional(defaultValue = "true") boolean createParentFolder,
+                      MuleEvent event)
     {
-        fileSystem.write(path, content, mode, lock, createParentFolder);
+        if (content == null || content instanceof NullPayload)
+        {
+            throw new IllegalArgumentException("Cannot write a null content");
+        }
+
+        fileSystem.write(path, content, mode, event, lock, createParentFolder);
     }
 
     @Operation

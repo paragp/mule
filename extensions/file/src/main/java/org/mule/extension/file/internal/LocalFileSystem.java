@@ -8,6 +8,7 @@ package org.mule.extension.file.internal;
 
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.mule.config.i18n.MessageFactory.createStaticMessage;
+import org.mule.api.MuleEvent;
 import org.mule.api.MuleRuntimeException;
 import org.mule.extension.file.internal.lock.DefaultPathLock;
 import org.mule.extension.file.internal.lock.NullPathLock;
@@ -15,12 +16,11 @@ import org.mule.extension.file.internal.lock.PathLock;
 import org.mule.module.extension.file.FilePayload;
 import org.mule.module.extension.file.FileSystem;
 import org.mule.module.extension.file.FileWriteMode;
+import org.mule.module.extension.file.internal.VisitableContentWrapper;
 import org.mule.util.FileUtils;
-import org.mule.util.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
@@ -36,6 +36,11 @@ final class LocalFileSystem implements FileSystem
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalFileSystem.class);
+
+    static RuntimeException exception(String message, Exception cause)
+    {
+        return new MuleRuntimeException(createStaticMessage(message), cause);
+    }
 
     private final FileConnector config;
 
@@ -65,7 +70,7 @@ final class LocalFileSystem implements FileSystem
     }
 
     @Override
-    public void write(String filePath, InputStream content, FileWriteMode mode, boolean lock, boolean createParentFolder)
+    public void write(String filePath, Object content, FileWriteMode mode, MuleEvent event, boolean lock, boolean createParentFolder)
     {
         Path path = getPath(filePath);
 
@@ -83,9 +88,14 @@ final class LocalFileSystem implements FileSystem
             verifyNotLocked(path);
         }
 
+        if (mode == FileWriteMode.OVERWRITE && Files.exists(path))
+        {
+
+        }
+
         try (OutputStream out = Files.newOutputStream(path, openOptions))
         {
-            IOUtils.copyLarge(content, out);
+            new VisitableContentWrapper(content).accept(new LocalFileWriter(out, event));
         }
         catch (Exception e)
         {
@@ -219,11 +229,6 @@ final class LocalFileSystem implements FileSystem
         }
     }
 
-
-    private RuntimeException exception(String message, Exception cause)
-    {
-        return new MuleRuntimeException(createStaticMessage(message), cause);
-    }
 
     private RuntimeException pathNotFoundException(Path path)
     {

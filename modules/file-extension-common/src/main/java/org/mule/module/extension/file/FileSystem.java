@@ -6,14 +6,14 @@
  */
 package org.mule.module.extension.file;
 
-import java.io.InputStream;
+import org.mule.api.MuleEvent;
 
 public interface FileSystem
 {
 
     FilePayload read(String filePath, boolean lock);
 
-    void write(String filePath, InputStream content, FileWriteMode mode, boolean lock, boolean createParentFolder);
+    void write(String filePath, Object content, FileWriteMode mode, MuleEvent event, boolean lock, boolean createParentFolder);
 
     void delete(String filePath);
 }

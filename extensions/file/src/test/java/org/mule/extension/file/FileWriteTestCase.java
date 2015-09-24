@@ -12,7 +12,6 @@ import static org.junit.Assert.assertThat;
 import static org.mule.module.extension.file.FileWriteMode.APPEND;
 import static org.mule.module.extension.file.FileWriteMode.CREATE_NEW;
 import static org.mule.module.extension.file.FileWriteMode.OVERWRITE;
-import org.mule.api.MuleEvent;
 import org.mule.module.extension.file.FileWriteMode;
 import org.mule.util.FileUtils;
 import org.mule.util.IOUtils;
@@ -138,15 +137,5 @@ public class FileWriteTestCase extends FileConnectorTestCase
 
         doWrite(file.getAbsolutePath(), HELLO_WORLD, mode, false);
         return IOUtils.toString(readPath(file.getAbsolutePath()).getContent());
-    }
-
-    private void doWrite(String path, Object content, FileWriteMode mode, boolean createParent) throws Exception
-    {
-        MuleEvent event = getTestEvent(content);
-        event.setFlowVariable("path", path);
-        event.setFlowVariable("createParent", createParent);
-        event.setFlowVariable("mode", mode);
-
-        runFlow("write", event);
     }
 }

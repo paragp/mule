@@ -13,6 +13,7 @@ import static org.mule.util.ClassUtils.getPathURL;
 import org.mule.api.MuleEvent;
 import org.mule.extension.file.internal.FileConnector;
 import org.mule.extension.file.internal.LocalFilePayload;
+import org.mule.module.extension.file.FileWriteMode;
 import org.mule.tck.junit4.ExtensionFunctionalTestCase;
 import org.mule.tck.junit4.rule.SystemProperty;
 
@@ -62,5 +63,15 @@ public abstract class FileConnectorTestCase extends ExtensionFunctionalTestCase
         MuleEvent response = runFlow("read", event);
 
         return (LocalFilePayload) response.getMessage().getPayload();
+    }
+
+    protected void doWrite(String path, Object content, FileWriteMode mode, boolean createParent) throws Exception
+    {
+        MuleEvent event = getTestEvent(content);
+        event.setFlowVariable("path", path);
+        event.setFlowVariable("createParent", createParent);
+        event.setFlowVariable("mode", mode);
+
+        runFlow("write", event);
     }
 }
