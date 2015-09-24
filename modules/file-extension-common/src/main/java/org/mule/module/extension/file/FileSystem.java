@@ -17,5 +17,7 @@ public interface FileSystem
 
     void copy(String sourcePath, String targetDirectory, boolean overwrite, boolean createParentFolder);
 
+    void move(String sourcePath, String targetDirectory, boolean overwrite, boolean createParentFolder);
+
     void delete(String filePath);
 }

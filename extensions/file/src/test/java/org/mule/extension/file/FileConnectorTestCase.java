@@ -9,7 +9,6 @@ package org.mule.extension.file;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.rules.ExpectedException.none;
-import static org.mule.util.ClassUtils.getPathURL;
 import org.mule.api.MuleEvent;
 import org.mule.extension.file.internal.FileConnector;
 import org.mule.extension.file.internal.LocalFilePayload;
@@ -20,6 +19,7 @@ import org.mule.util.IOUtils;
 
 import java.io.File;
 
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
@@ -29,14 +29,29 @@ public abstract class FileConnectorTestCase extends ExtensionFunctionalTestCase
 
     protected static final String HELLO_WORLD = "Hello World!";
 
-    @Rule
-    public SystemProperty baseDir = new SystemProperty("baseDir", getPathURL(FileConnector.class).getPath() + "/target/test-classes/");
+    @ClassRule
+    public static TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Rule
     public ExpectedException expectedException = none();
 
     @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    public SystemProperty baseDir = new SystemProperty("baseDir", temporaryFolder.getRoot().getAbsolutePath());
+
+    @Override
+    protected void doSetUpBeforeMuleContextCreation() throws Exception
+    {
+        if (!temporaryFolder.getRoot().exists())
+        {
+            temporaryFolder.getRoot().mkdir();
+        }
+    }
+
+    @Override
+    protected void doTearDownAfterMuleContextDispose() throws Exception
+    {
+        temporaryFolder.delete();
+    }
 
     @Override
     protected Class<?>[] getAnnotatedExtensionClasses()

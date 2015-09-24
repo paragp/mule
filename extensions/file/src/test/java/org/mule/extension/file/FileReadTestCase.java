@@ -14,6 +14,7 @@ import org.mule.extension.file.internal.LocalFilePayload;
 import org.mule.module.extension.file.FilePayload;
 import org.mule.util.IOUtils;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,6 +23,7 @@ import java.nio.file.attribute.FileTime;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 public class FileReadTestCase extends FileConnectorTestCase
@@ -31,6 +33,16 @@ public class FileReadTestCase extends FileConnectorTestCase
     protected String getConfigFile()
     {
         return "file-read-config.xml";
+    }
+
+    @Override
+    protected void doSetUp() throws Exception
+    {
+        super.doSetUp();
+
+        File folder = temporaryFolder.newFolder("files");
+        File hello = new File(folder, "hello.txt");
+        FileUtils.write(hello, HELLO_WORLD);
     }
 
     @Test

@@ -52,6 +52,16 @@ public class FileSystemOperations
     }
 
     @Operation
+    public void move(@Connection FileSystem fileSystem,
+                     String sourcePath,
+                     String targetDirectory,
+                     @Optional(defaultValue = "false") boolean overwrite,
+                     @Optional(defaultValue = "true") boolean createParentFolder) {
+
+        fileSystem.move(sourcePath, targetDirectory, overwrite, createParentFolder);
+    }
+
+    @Operation
     public void delete(@Connection FileSystem fileSystem, String path)
     {
         fileSystem.delete(path);

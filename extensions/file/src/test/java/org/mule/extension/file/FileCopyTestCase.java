@@ -6,6 +6,7 @@
  */
 package org.mule.extension.file;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -13,6 +14,7 @@ import org.mule.api.MuleEvent;
 import org.mule.util.FileUtils;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.junit.Test;
 
@@ -20,15 +22,16 @@ public class FileCopyTestCase extends FileConnectorTestCase
 {
 
     private static final String SOURCE_FILE_NAME = "test.txt";
+    private static final String SOURCE_DIRECTORY_NAME = "source";
+    private static final String EXISTING_CONTENT = "I was here first!";
 
-    private String sourcePath;
+    protected String sourcePath;
 
     @Override
     protected String getConfigFile()
     {
         return "file-copy-config.xml";
     }
-
 
     @Override
     protected void doSetUp() throws Exception
@@ -40,33 +43,36 @@ public class FileCopyTestCase extends FileConnectorTestCase
     }
 
     @Test
-    public void copyToExistingFolder() throws Exception
+    public void toExistingFolder() throws Exception
     {
         String target = temporaryFolder.newFolder().getAbsolutePath();
         doCopy(target, false, false);
 
-        assertCopy(String.format("%s/%s", target, SOURCE_FILE_NAME));
+        assertCopy(format("%s/%s", target, SOURCE_FILE_NAME));
     }
 
     @Test
-    public void copyToNonExistingFolder() throws Exception {
-        String target = String.format("%s/%s", temporaryFolder.newFolder().getAbsolutePath(), "a/b/c");
+    public void toNonExistingFolder() throws Exception
+    {
+        String target = format("%s/%s", temporaryFolder.newFolder().getAbsolutePath(), "a/b/c");
         doCopy(target, false, true);
 
-        assertCopy(String.format("%s/%s", target, SOURCE_FILE_NAME));
+        assertCopy(format("%s/%s", target, SOURCE_FILE_NAME));
     }
 
     @Test
-    public void copyToNonExistingFolderWithoutCreateParent() throws Exception {
+    public void toNonExistingFolderWithoutCreateParent() throws Exception
+    {
         String target = temporaryFolder.newFile().getAbsolutePath() + "a/b/c";
         expectedException.expectCause(instanceOf(IllegalArgumentException.class));
         doCopy(target, false, false);
     }
 
     @Test
-    public void copyAndOverwrite() throws Exception {
+    public void overwrite() throws Exception
+    {
         File existingFile = temporaryFolder.newFile();
-        FileUtils.write(existingFile, "I was here first!");
+        FileUtils.write(existingFile, EXISTING_CONTENT);
 
         final String target = existingFile.getAbsolutePath();
 
@@ -75,27 +81,95 @@ public class FileCopyTestCase extends FileConnectorTestCase
     }
 
     @Test
-    public void copyWithoutOverwrite() throws Exception {
+    public void withoutOverwrite() throws Exception
+    {
         File existingFile = temporaryFolder.newFile();
-        FileUtils.write(existingFile, "I was here first!");
+        FileUtils.write(existingFile, EXISTING_CONTENT);
 
         expectedException.expectCause(instanceOf(IllegalArgumentException.class));
         doCopy(existingFile.getAbsolutePath(), false, false);
     }
 
+    @Test
+    public void directoryToExistingDirectory() throws Exception
+    {
+        File sourceFolder = buildSourceDirectoryForCopy();
+
+        sourcePath = sourceFolder.getAbsolutePath();
+
+        File targetFolder = temporaryFolder.newFolder("target");
+        doCopy(targetFolder.getAbsolutePath(), false, false);
+        assertCopy(format("%s/source/%s", targetFolder.getAbsolutePath(), SOURCE_FILE_NAME));
+    }
+
+    @Test
+    public void directoryToNotExistingDirectory() throws Exception
+    {
+        File sourceFolder = buildSourceDirectoryForCopy();
+
+        sourcePath = sourceFolder.getAbsolutePath();
+
+        String target = "a/b/c";
+        doCopy(target, false, true);
+
+        assertCopy(format("%s/source/%s", target, SOURCE_FILE_NAME));
+    }
+
+    @Test
+    public void directoryAndOverwrite() throws Exception
+    {
+        sourcePath = buildSourceDirectoryForCopy().getAbsolutePath();
+
+        File targetDirectory = temporaryFolder.newFolder("target");
+        File existingDirectory = new File(targetDirectory, SOURCE_DIRECTORY_NAME);
+        existingDirectory.mkdir();
+        File existingFile = new File(existingDirectory, SOURCE_FILE_NAME);
+        FileUtils.write(existingFile, EXISTING_CONTENT);
+
+        doCopy(targetDirectory.getAbsolutePath(), true, false);
+        assertCopy(format("%s/%s/%s", targetDirectory.getAbsolutePath(), SOURCE_DIRECTORY_NAME, SOURCE_FILE_NAME));
+    }
+
+    @Test
+    public void directoryWithoutOverwrite() throws Exception
+    {
+        sourcePath = buildSourceDirectoryForCopy().getAbsolutePath();
+
+        File targetDirectory = temporaryFolder.newFolder("target");
+        File existingDirectory = new File(targetDirectory, SOURCE_DIRECTORY_NAME);
+        existingDirectory.mkdir();
+        File existingFile = new File(existingDirectory, SOURCE_FILE_NAME);
+        FileUtils.write(existingFile, EXISTING_CONTENT);
+
+        expectedException.expectCause(instanceOf(IllegalArgumentException.class));
+        doCopy(format("%s/%s", targetDirectory.getAbsolutePath(), SOURCE_DIRECTORY_NAME), false, false);
+    }
+
+    private File buildSourceDirectoryForCopy() throws IOException
+    {
+        File sourceFolder = temporaryFolder.newFolder(SOURCE_DIRECTORY_NAME);
+        File file = new File(sourceFolder, SOURCE_FILE_NAME);
+        FileUtils.write(file, HELLO_WORLD);
+        return sourceFolder;
+    }
+
     private void doCopy(String target, boolean overwrite, boolean createParentFolder) throws Exception
     {
         MuleEvent event = getTestEvent("");
-        event.setFlowVariable("source", sourcePath);
+        event.setFlowVariable(SOURCE_DIRECTORY_NAME, sourcePath);
         event.setFlowVariable("target", target);
         event.setFlowVariable("overwrite", overwrite);
         event.setFlowVariable("createParent", createParentFolder);
 
-        runFlow("copy", event);
+        runFlow(getFlowName(), event);
     }
 
-    private void assertCopy(String target) throws Exception
+    protected void assertCopy(String target) throws Exception
     {
         assertThat(readPathAsString(target), equalTo(HELLO_WORLD));
+    }
+    
+    protected String getFlowName() {
+        return "copy";
     }
 }
