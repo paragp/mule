@@ -23,10 +23,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
 import org.slf4j.Logger;
@@ -88,11 +90,6 @@ final class LocalFileSystem implements FileSystem
             verifyNotLocked(path);
         }
 
-        if (mode == FileWriteMode.OVERWRITE && Files.exists(path))
-        {
-
-        }
-
         try (OutputStream out = Files.newOutputStream(path, openOptions))
         {
             new VisitableContentWrapper(content).accept(new LocalFileWriter(out, event));
@@ -104,6 +101,57 @@ final class LocalFileSystem implements FileSystem
         finally
         {
             pathLock.release();
+        }
+    }
+
+    @Override
+    public void copy(String sourcePath, String targetDirectory, boolean overwrite, boolean createParentFolder)
+    {
+        Path source = getExistingPath(sourcePath);
+        Path targetPath = getPath(targetDirectory);
+
+        CopyOption copyOption = null;
+
+        if (Files.exists(targetPath))
+        {
+            if (Files.isDirectory(targetPath))
+            {
+                targetPath = targetPath.resolve(source.getFileName());
+            }
+            else if (overwrite)
+            {
+                copyOption = StandardCopyOption.REPLACE_EXISTING;
+            }
+            else
+            {
+                throw new IllegalArgumentException(String.format("File '%s' already exists. Set the 'overwrite' parameter to 'true' to perform the operation anyway", targetPath));
+            }
+        }
+        else
+        {
+            if (createParentFolder)
+            {
+                targetPath.toFile().mkdirs();
+                targetPath = targetPath.resolve(source.getFileName());
+            } else {
+                throw new IllegalArgumentException(String.format("Cannot copy to '%s' because such path doesn't exist. Consider setting the 'createParentFolder' parameter to true", targetPath));
+            }
+        }
+
+        try
+        {
+            if (copyOption != null)
+            {
+                Files.copy(source, targetPath, copyOption);
+            }
+            else
+            {
+                Files.copy(source, targetPath);
+            }
+        }
+        catch (Exception e)
+        {
+            throw exception(String.format("Found exception copying file '%s' to '%s'", source, targetPath), e);
         }
     }
 
@@ -224,7 +272,7 @@ final class LocalFileSystem implements FileSystem
             }
             else
             {
-                throw new IllegalArgumentException(String.format("Cannot write to file '%s' because path to it doesn't exist", path));
+                throw new IllegalArgumentException(String.format("Cannot write to file '%s' because path to it doesn't exist. Consider setting the 'createParentFolder' attribute to 'true'", path));
             }
         }
     }

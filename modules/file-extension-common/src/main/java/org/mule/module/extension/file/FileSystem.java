@@ -15,5 +15,7 @@ public interface FileSystem
 
     void write(String filePath, Object content, FileWriteMode mode, MuleEvent event, boolean lock, boolean createParentFolder);
 
+    void copy(String sourcePath, String targetDirectory, boolean overwrite, boolean createParentFolder);
+
     void delete(String filePath);
 }

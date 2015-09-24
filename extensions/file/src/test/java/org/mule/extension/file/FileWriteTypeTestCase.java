@@ -10,7 +10,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import org.mule.api.MuleEvent;
 import org.mule.api.transport.OutputHandler;
-import org.mule.extension.file.internal.LocalFilePayload;
 import org.mule.module.extension.file.FileWriteMode;
 import org.mule.util.IOUtils;
 
@@ -72,8 +71,7 @@ public class FileWriteTypeTestCase extends FileConnectorTestCase
     public void writeAndAssert() throws Exception
     {
         write(content);
-        LocalFilePayload payload = readPath(path);
-        assertThat(IOUtils.toString(payload.getContent()), equalTo(expected));
+        assertThat(readPathAsString(path), equalTo(expected));
     }
 
     private void write(Object content) throws Exception

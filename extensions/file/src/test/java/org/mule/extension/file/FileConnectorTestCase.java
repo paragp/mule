@@ -16,6 +16,7 @@ import org.mule.extension.file.internal.LocalFilePayload;
 import org.mule.module.extension.file.FileWriteMode;
 import org.mule.tck.junit4.ExtensionFunctionalTestCase;
 import org.mule.tck.junit4.rule.SystemProperty;
+import org.mule.util.IOUtils;
 
 import java.io.File;
 
@@ -63,6 +64,11 @@ public abstract class FileConnectorTestCase extends ExtensionFunctionalTestCase
         MuleEvent response = runFlow("read", event);
 
         return (LocalFilePayload) response.getMessage().getPayload();
+    }
+
+    protected String readPathAsString(String path) throws Exception
+    {
+        return IOUtils.toString(readPath(path).getContent());
     }
 
     protected void doWrite(String path, Object content, FileWriteMode mode, boolean createParent) throws Exception
