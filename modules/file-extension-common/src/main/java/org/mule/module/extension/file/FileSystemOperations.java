@@ -71,4 +71,9 @@ public class FileSystemOperations
     public void rename(@Connection FileSystem fileSystem, String sourcePath, String to) {
         fileSystem.rename(sourcePath, to);
     }
+
+    @Operation
+    public void createDirectory(@Connection FileSystem fileSystem, @Optional String basePath, String directory) {
+        fileSystem.createDirectory(basePath, directory);
+    }
 }

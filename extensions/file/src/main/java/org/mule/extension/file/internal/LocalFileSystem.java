@@ -6,6 +6,7 @@
  */
 package org.mule.extension.file.internal;
 
+import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.mule.config.i18n.MessageFactory.createStaticMessage;
 import org.mule.api.MuleEvent;
@@ -30,6 +31,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +58,7 @@ final class LocalFileSystem implements FileSystem
         Path path = getExistingPath(filePath);
         if (Files.isDirectory(path))
         {
-            throw new IllegalArgumentException(String.format("Cannot read path '%s' since it's a directory", path));
+            throw new IllegalArgumentException(format("Cannot read path '%s' since it's a directory", path));
         }
 
         if (lock)
@@ -95,7 +97,7 @@ final class LocalFileSystem implements FileSystem
         }
         catch (Exception e)
         {
-            throw exception(String.format("Exception was found writing to file '%s'", path), e);
+            throw exception(format("Exception was found writing to file '%s'", path), e);
         }
         finally
         {
@@ -145,7 +147,7 @@ final class LocalFileSystem implements FileSystem
         }
         catch (IOException e)
         {
-            throw exception(String.format("Could not delete '%s'", path), e);
+            throw exception(format("Could not delete '%s'", path), e);
         }
     }
 
@@ -157,7 +159,7 @@ final class LocalFileSystem implements FileSystem
 
         if (Files.exists(target))
         {
-            throw new IllegalArgumentException(String.format("'%s' cannot be renamed because '%s' already exists", source, target));
+            throw new IllegalArgumentException(format("'%s' cannot be renamed because '%s' already exists", source, target));
         }
 
         try
@@ -166,7 +168,41 @@ final class LocalFileSystem implements FileSystem
         }
         catch (Exception e)
         {
-            throw exception(String.format("Exception was found renaming '%s' to '%s'", source, newName), e);
+            throw exception(format("Exception was found renaming '%s' to '%s'", source, newName), e);
+        }
+    }
+
+    @Override
+    public void createDirectory(String basePath, String directory)
+    {
+        if (StringUtils.isBlank(basePath))
+        {
+            basePath = config.getBaseDir();
+        }
+
+        Path base = getExistingPath(basePath);
+        Path target = base.resolve(directory).toAbsolutePath();
+
+        if (Files.exists(target))
+        {
+            throw new IllegalArgumentException(format("Directory '%s' already exists", target));
+        }
+
+        createDirectory(target.toFile());
+    }
+
+    private void createDirectory(File target)
+    {
+        try
+        {
+            if (!target.mkdirs())
+            {
+                throw new MuleRuntimeException(createStaticMessage(format("Directory '%s' could not be created", target)));
+            }
+        }
+        catch (Exception e)
+        {
+            throw exception(format("Exception was found creating directory '%s'", target), e);
         }
     }
 
@@ -199,7 +235,7 @@ final class LocalFileSystem implements FileSystem
         }
         catch (Exception e)
         {
-            throw exception(String.format("Could not lock file '%s' because it's already owner by another process", path), e);
+            throw exception(format("Could not lock file '%s' because it's already owner by another process", path), e);
         }
     }
 
@@ -239,7 +275,7 @@ final class LocalFileSystem implements FileSystem
     {
         if (isLocked(path))
         {
-            throw new IllegalStateException(String.format("File '%s' is locked by another process", path));
+            throw new IllegalStateException(format("File '%s' is locked by another process", path));
         }
     }
 
@@ -255,11 +291,11 @@ final class LocalFileSystem implements FileSystem
         {
             if (createParentFolder)
             {
-                parentFolder.mkdirs();
+                createDirectory(parentFolder);
             }
             else
             {
-                throw new IllegalArgumentException(String.format("Cannot write to file '%s' because path to it doesn't exist. Consider setting the 'createParentFolder' attribute to 'true'", path));
+                throw new IllegalArgumentException(format("Cannot write to file '%s' because path to it doesn't exist. Consider setting the 'createParentFolder' attribute to 'true'", path));
             }
         }
     }
@@ -267,7 +303,7 @@ final class LocalFileSystem implements FileSystem
 
     private RuntimeException pathNotFoundException(Path path)
     {
-        return new IllegalArgumentException(String.format("File '%s' doesn't exists", path));
+        return new IllegalArgumentException(format("File '%s' doesn't exists", path));
     }
 
 }

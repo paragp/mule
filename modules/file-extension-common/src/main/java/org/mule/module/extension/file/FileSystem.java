@@ -22,4 +22,6 @@ public interface FileSystem
     void delete(String filePath);
 
     void rename(String sourcePath, String newName);
+
+    void createDirectory(String basePath, String directory);
 }
