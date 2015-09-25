@@ -15,6 +15,7 @@ import org.mule.module.extension.file.FilePayload;
 import org.mule.util.IOUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,10 +40,7 @@ public class FileReadTestCase extends FileConnectorTestCase
     protected void doSetUp() throws Exception
     {
         super.doSetUp();
-
-        File folder = temporaryFolder.newFolder("files");
-        File hello = new File(folder, "hello.txt");
-        FileUtils.write(hello, HELLO_WORLD);
+        createHelloWorldFile();
     }
 
     @Test

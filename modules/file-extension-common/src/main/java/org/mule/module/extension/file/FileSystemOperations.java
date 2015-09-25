@@ -66,4 +66,9 @@ public class FileSystemOperations
     {
         fileSystem.delete(path);
     }
+
+    @Operation
+    public void rename(@Connection FileSystem fileSystem, String sourcePath, String to) {
+        fileSystem.rename(sourcePath, to);
+    }
 }

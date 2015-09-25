@@ -46,7 +46,7 @@ public class FileCopyTestCase extends FileConnectorTestCase
     public void toExistingFolder() throws Exception
     {
         String target = temporaryFolder.newFolder().getAbsolutePath();
-        doCopy(target, false, false);
+        doExecute(target, false, false);
 
         assertCopy(format("%s/%s", target, SOURCE_FILE_NAME));
     }
@@ -55,7 +55,7 @@ public class FileCopyTestCase extends FileConnectorTestCase
     public void toNonExistingFolder() throws Exception
     {
         String target = format("%s/%s", temporaryFolder.newFolder().getAbsolutePath(), "a/b/c");
-        doCopy(target, false, true);
+        doExecute(target, false, true);
 
         assertCopy(format("%s/%s", target, SOURCE_FILE_NAME));
     }
@@ -65,7 +65,7 @@ public class FileCopyTestCase extends FileConnectorTestCase
     {
         String target = temporaryFolder.newFile().getAbsolutePath() + "a/b/c";
         expectedException.expectCause(instanceOf(IllegalArgumentException.class));
-        doCopy(target, false, false);
+        doExecute(target, false, false);
     }
 
     @Test
@@ -76,7 +76,7 @@ public class FileCopyTestCase extends FileConnectorTestCase
 
         final String target = existingFile.getAbsolutePath();
 
-        doCopy(target, true, false);
+        doExecute(target, true, false);
         assertCopy(target);
     }
 
@@ -87,30 +87,30 @@ public class FileCopyTestCase extends FileConnectorTestCase
         FileUtils.write(existingFile, EXISTING_CONTENT);
 
         expectedException.expectCause(instanceOf(IllegalArgumentException.class));
-        doCopy(existingFile.getAbsolutePath(), false, false);
+        doExecute(existingFile.getAbsolutePath(), false, false);
     }
 
     @Test
     public void directoryToExistingDirectory() throws Exception
     {
-        File sourceFolder = buildSourceDirectoryForCopy();
+        File sourceFolder = buildSourceDirectory();
 
         sourcePath = sourceFolder.getAbsolutePath();
 
         File targetFolder = temporaryFolder.newFolder("target");
-        doCopy(targetFolder.getAbsolutePath(), false, false);
+        doExecute(targetFolder.getAbsolutePath(), false, false);
         assertCopy(format("%s/source/%s", targetFolder.getAbsolutePath(), SOURCE_FILE_NAME));
     }
 
     @Test
     public void directoryToNotExistingDirectory() throws Exception
     {
-        File sourceFolder = buildSourceDirectoryForCopy();
+        File sourceFolder = buildSourceDirectory();
 
         sourcePath = sourceFolder.getAbsolutePath();
 
         String target = "a/b/c";
-        doCopy(target, false, true);
+        doExecute(target, false, true);
 
         assertCopy(format("%s/source/%s", target, SOURCE_FILE_NAME));
     }
@@ -118,7 +118,7 @@ public class FileCopyTestCase extends FileConnectorTestCase
     @Test
     public void directoryAndOverwrite() throws Exception
     {
-        sourcePath = buildSourceDirectoryForCopy().getAbsolutePath();
+        sourcePath = buildSourceDirectory().getAbsolutePath();
 
         File targetDirectory = temporaryFolder.newFolder("target");
         File existingDirectory = new File(targetDirectory, SOURCE_DIRECTORY_NAME);
@@ -126,14 +126,14 @@ public class FileCopyTestCase extends FileConnectorTestCase
         File existingFile = new File(existingDirectory, SOURCE_FILE_NAME);
         FileUtils.write(existingFile, EXISTING_CONTENT);
 
-        doCopy(targetDirectory.getAbsolutePath(), true, false);
+        doExecute(targetDirectory.getAbsolutePath(), true, false);
         assertCopy(format("%s/%s/%s", targetDirectory.getAbsolutePath(), SOURCE_DIRECTORY_NAME, SOURCE_FILE_NAME));
     }
 
     @Test
     public void directoryWithoutOverwrite() throws Exception
     {
-        sourcePath = buildSourceDirectoryForCopy().getAbsolutePath();
+        sourcePath = buildSourceDirectory().getAbsolutePath();
 
         File targetDirectory = temporaryFolder.newFolder("target");
         File existingDirectory = new File(targetDirectory, SOURCE_DIRECTORY_NAME);
@@ -142,10 +142,10 @@ public class FileCopyTestCase extends FileConnectorTestCase
         FileUtils.write(existingFile, EXISTING_CONTENT);
 
         expectedException.expectCause(instanceOf(IllegalArgumentException.class));
-        doCopy(format("%s/%s", targetDirectory.getAbsolutePath(), SOURCE_DIRECTORY_NAME), false, false);
+        doExecute(format("%s/%s", targetDirectory.getAbsolutePath(), SOURCE_DIRECTORY_NAME), false, false);
     }
 
-    private File buildSourceDirectoryForCopy() throws IOException
+    private File buildSourceDirectory() throws IOException
     {
         File sourceFolder = temporaryFolder.newFolder(SOURCE_DIRECTORY_NAME);
         File file = new File(sourceFolder, SOURCE_FILE_NAME);
@@ -153,7 +153,7 @@ public class FileCopyTestCase extends FileConnectorTestCase
         return sourceFolder;
     }
 
-    private void doCopy(String target, boolean overwrite, boolean createParentFolder) throws Exception
+    private void doExecute(String target, boolean overwrite, boolean createParentFolder) throws Exception
     {
         MuleEvent event = getTestEvent("");
         event.setFlowVariable(SOURCE_DIRECTORY_NAME, sourcePath);

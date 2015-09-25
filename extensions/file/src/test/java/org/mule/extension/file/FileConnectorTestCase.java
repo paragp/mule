@@ -18,7 +18,9 @@ import org.mule.tck.junit4.rule.SystemProperty;
 import org.mule.util.IOUtils;
 
 import java.io.File;
+import java.io.IOException;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -94,5 +96,14 @@ public abstract class FileConnectorTestCase extends ExtensionFunctionalTestCase
         event.setFlowVariable("mode", mode);
 
         runFlow("write", event);
+    }
+
+    protected File createHelloWorldFile() throws IOException
+    {
+        File folder = temporaryFolder.newFolder("files");
+        File hello = new File(folder, "hello.txt");
+        FileUtils.write(hello, HELLO_WORLD);
+
+        return hello;
     }
 }

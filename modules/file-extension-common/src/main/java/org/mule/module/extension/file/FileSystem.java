@@ -20,4 +20,6 @@ public interface FileSystem
     void move(String sourcePath, String targetDirectory, boolean overwrite, boolean createParentFolder);
 
     void delete(String filePath);
+
+    void rename(String sourcePath, String newName);
 }

@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
 import org.slf4j.Logger;
@@ -145,6 +146,27 @@ final class LocalFileSystem implements FileSystem
         catch (IOException e)
         {
             throw exception(String.format("Could not delete '%s'", path), e);
+        }
+    }
+
+    @Override
+    public void rename(String sourcePath, String newName)
+    {
+        Path source = getExistingPath(sourcePath);
+        Path target = source.getParent().resolve(newName);
+
+        if (Files.exists(target))
+        {
+            throw new IllegalArgumentException(String.format("'%s' cannot be renamed because '%s' already exists", source, target));
+        }
+
+        try
+        {
+            Files.move(source, target, StandardCopyOption.ATOMIC_MOVE);
+        }
+        catch (Exception e)
+        {
+            throw exception(String.format("Exception was found renaming '%s' to '%s'", source, newName), e);
         }
     }
 
