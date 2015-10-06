@@ -35,7 +35,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class LocalFileSystem implements FileSystem
+public final class LocalFileSystem implements FileSystem
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalFileSystem.class);
@@ -206,7 +206,7 @@ final class LocalFileSystem implements FileSystem
         }
     }
 
-    private Path getExistingPath(String filePath)
+    public Path getExistingPath(String filePath)
     {
         Path path = getPath(filePath);
         if (Files.notExists(path))
@@ -303,7 +303,7 @@ final class LocalFileSystem implements FileSystem
 
     private RuntimeException pathNotFoundException(Path path)
     {
-        return new IllegalArgumentException(format("File '%s' doesn't exists", path));
+        return new IllegalArgumentException(format("Path '%s' doesn't exists", path));
     }
 
 }
