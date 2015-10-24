@@ -4,11 +4,11 @@
  * license, a copy of which has been included with this distribution in the
  * LICENSE.txt file.
  */
-package org.mule.module.extension.internal.config;
+package org.mule.module.extension.spring.internal.config;
 
-import static org.mule.module.extension.internal.capability.xml.schema.model.SchemaConstants.MULE_NAMESPACE;
-import static org.mule.module.extension.internal.config.XmlExtensionParserUtils.parseConnectionProviderName;
-import static org.mule.module.extension.internal.config.XmlExtensionParserUtils.toElementDescriptorBeanDefinition;
+import static org.mule.module.extension.spring.internal.xml.schema.model.SchemaConstants.MULE_NAMESPACE;
+import static org.mule.module.extension.spring.internal.config.XmlExtensionParserUtils.parseConnectionProviderName;
+import static org.mule.module.extension.spring.internal.config.XmlExtensionParserUtils.toElementDescriptorBeanDefinition;
 import org.mule.extension.api.introspection.ConnectionProviderModel;
 
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
