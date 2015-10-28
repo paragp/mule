@@ -50,6 +50,7 @@ import org.mule.client.DefaultLocalMuleClient;
 import org.mule.config.ClusterConfiguration;
 import org.mule.config.DefaultMuleConfiguration;
 import org.mule.config.NullClusterConfiguration;
+import org.mule.config.bootstrap.BootstrapPropertiesServiceDiscoverer;
 import org.mule.config.i18n.CoreMessages;
 import org.mule.context.notification.MuleContextNotification;
 import org.mule.context.notification.NotificationException;
@@ -191,6 +192,7 @@ public class DefaultMuleContext implements MuleContext
     private volatile FlowTraceManager flowTraceManager;
 
     private volatile Collection<ExceptionContextProvider> exceptionContextProviders;
+    private BootstrapPropertiesServiceDiscoverer bootstrapPropertiesServiceDiscoverer;
 
     /**
      * @deprecated Use empty constructor instead and use setter for dependencies.
@@ -1125,5 +1127,16 @@ public class DefaultMuleContext implements MuleContext
             }
         }
         return exceptionContextProviders;
+    }
+
+    @Override
+    public BootstrapPropertiesServiceDiscoverer getRegistryBootstrapServiceDiscoverer()
+    {
+        return bootstrapPropertiesServiceDiscoverer;
+    }
+
+    public void setBootstrapPropertiesServiceDiscoverer(BootstrapPropertiesServiceDiscoverer bootstrapPropertiesServiceDiscoverer)
+    {
+        this.bootstrapPropertiesServiceDiscoverer = bootstrapPropertiesServiceDiscoverer;
     }
 }

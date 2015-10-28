@@ -81,24 +81,24 @@ public class SimpleRegistryBootstrap extends AbstractRegistryBootstrap
     }
 
     @Override
-    protected void doRegisterObject(String key, String className, boolean optional) throws Exception
+    protected void doRegisterObject(String key, boolean optional, BootstrapPropertiesService service, String className) throws Exception
     {
-        Object o = ClassUtils.instanciateClass(className);
+        Object value = service.instantiateClass(className);
         Class<?> meta = Object.class;
 
-        if (o instanceof ObjectProcessor)
+        if (value instanceof ObjectProcessor)
         {
             meta = ObjectProcessor.class;
         }
-        else if (o instanceof StreamCloser)
+        else if (value instanceof StreamCloser)
         {
             meta = StreamCloser.class;
         }
-        else if (o instanceof BootstrapObjectFactory)
+        else if (value instanceof BootstrapObjectFactory)
         {
-            o = ((BootstrapObjectFactory) o).create();
+            value = ((BootstrapObjectFactory) value).create();
         }
 
-        muleContext.getRegistry().registerObject(key, o, meta);
+        muleContext.getRegistry().registerObject(key, value, meta);
     }
 }

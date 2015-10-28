@@ -32,6 +32,7 @@ import org.mule.api.serialization.ObjectSerializer;
 import org.mule.api.store.ListableObjectStore;
 import org.mule.api.store.ObjectStoreManager;
 import org.mule.api.util.StreamCloserService;
+import org.mule.config.bootstrap.BootstrapPropertiesServiceDiscoverer;
 import org.mule.context.notification.NotificationException;
 import org.mule.context.notification.ServerNotificationManager;
 import org.mule.extension.api.ExtensionManager;
@@ -379,5 +380,10 @@ public interface MuleContext extends Lifecycle
      * @since 3.8.0
      */
     Collection<ExceptionContextProvider> getExceptionContextProviders();
+
+    /**
+     * @return {@link BootstrapPropertiesServiceDiscoverer} used to bootstrap this {@link MuleContext}
+     */
+    BootstrapPropertiesServiceDiscoverer getRegistryBootstrapServiceDiscoverer();
 }
 

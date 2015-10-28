@@ -16,12 +16,10 @@ import org.mule.api.transformer.Transformer;
 import org.mule.config.i18n.CoreMessages;
 import org.mule.util.ClassUtils;
 import org.mule.util.ExceptionUtils;
-import org.mule.util.OrderedProperties;
 import org.mule.util.PropertiesUtils;
-import org.mule.util.UUID;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -116,18 +114,50 @@ public abstract class AbstractRegistryBootstrap implements Initialisable, MuleCo
         this.muleContext = context;
     }
 
+    private class BootstrapProperty
+    {
+
+        private final BootstrapPropertiesService service;
+        private final String key;
+
+        private final String value;
+
+        private BootstrapProperty(BootstrapPropertiesService service, String key, String value)
+        {
+            this.service = service;
+            this.key = key;
+            this.value = value;
+        }
+
+        public BootstrapPropertiesService getService()
+        {
+            return service;
+        }
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        public String getKey()
+        {
+            return key;
+        }
+
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public void initialise() throws InitialisationException
     {
-        List<Properties> bootstraps;
+        List<BootstrapPropertiesService> bootstrapPropertiesServices = null;
         try
         {
-            bootstraps = discoverer.discover();
+            bootstrapPropertiesServices = muleContext.getRegistryBootstrapServiceDiscoverer().discover();
         }
-        catch (BootstrapException e)
+        catch (Exception e)
         {
             throw new InitialisationException(e, this);
         }
@@ -135,42 +165,46 @@ public abstract class AbstractRegistryBootstrap implements Initialisable, MuleCo
         // Merge and process properties
         int objectCounter = 1;
         int transformerCounter = 1;
-        Properties transformers = new OrderedProperties();
-        Properties namedObjects = new OrderedProperties();
-        Properties unnamedObjects = new OrderedProperties();
-        Map<String, String> singleTransactionFactories = new LinkedHashMap<>();
+        List<BootstrapProperty> transformers = new LinkedList<>();
+        List<BootstrapProperty> namedObjects = new LinkedList<>();
+        List<BootstrapProperty> unnamedObjects = new LinkedList<>();
+        List<BootstrapProperty> singleTransactionFactories = new LinkedList<>();
 
-        for (Properties bootstrap : bootstraps)
+        for (BootstrapPropertiesService bootstrapPropertiesService : bootstrapPropertiesServices)
         {
-            for (Map.Entry entry : bootstrap.entrySet())
+            Properties bootstrapProperties = bootstrapPropertiesService.getProperties();
+
+            for (Map.Entry entry : bootstrapProperties.entrySet())
             {
-                final String key = (String) entry.getKey();
-                if (key.contains(OBJECT_KEY))
+                final String propertyKey = (String) entry.getKey();
+                final String propertyValue = (String) entry.getValue();
+
+                if (propertyKey.contains(OBJECT_KEY))
                 {
-                    String newKey = key.substring(0, key.lastIndexOf(".")) + objectCounter++;
-                    unnamedObjects.put(newKey, entry.getValue());
+                    String newKey = propertyKey.substring(0, propertyKey.lastIndexOf(".")) + objectCounter++;
+                    unnamedObjects.add(new BootstrapProperty(bootstrapPropertiesService, newKey, propertyValue));
                 }
-                else if (key.contains(TRANSFORMER_KEY))
+                else if (propertyKey.contains(TRANSFORMER_KEY))
                 {
-                    String newKey = key.substring(0, key.lastIndexOf(".")) + transformerCounter++;
-                    transformers.put(newKey, entry.getValue());
+                    String newKey = propertyKey.substring(0, propertyKey.lastIndexOf(".")) + transformerCounter++;
+                    transformers.add(new BootstrapProperty(bootstrapPropertiesService, newKey, propertyValue));
                 }
-                else if (key.contains(SINGLE_TX))
+                else if (propertyKey.contains(SINGLE_TX))
                 {
-                    if (!key.contains(".transaction.resource"))
+                    if (!propertyKey.contains(".transaction.resource"))
                     {
-                        String transactionResourceKey = key.replace(".transaction.factory", ".transaction.resource");
-                        String transactionResource = bootstrap.getProperty(transactionResourceKey);
+                        String transactionResourceKey = propertyKey.replace(".transaction.factory", ".transaction.resource");
+                        String transactionResource = bootstrapProperties.getProperty(transactionResourceKey);
                         if (transactionResource == null)
                         {
-                            throw new InitialisationException(CoreMessages.createStaticMessage(String.format("Theres no transaction resource specified for transaction factory %s", key)), this);
+                            throw new InitialisationException(CoreMessages.createStaticMessage(String.format("There is no transaction resource specified for transaction factory %s", propertyKey)), this);
                         }
-                        singleTransactionFactories.put((String) entry.getValue(), transactionResource);
+                        singleTransactionFactories.add(new BootstrapProperty(bootstrapPropertiesService, propertyValue, transactionResource));
                     }
                 }
                 else
                 {
-                    namedObjects.put(key, entry.getValue());
+                    namedObjects.add(new BootstrapProperty(bootstrapPropertiesService, propertyKey, propertyValue));
                 }
             }
         }
@@ -189,26 +223,23 @@ public abstract class AbstractRegistryBootstrap implements Initialisable, MuleCo
         }
     }
 
-    private void registerUnnamedObjects(Properties props) throws Exception
+    private void registerUnnamedObjects(List<BootstrapProperty> bootstrapProperties) throws Exception
     {
-        for (Map.Entry<Object, Object> entry : props.entrySet())
+        for (BootstrapProperty bootstrapProperty : bootstrapProperties)
         {
-            final String key = String.format("%s#%s", entry.getKey(), UUID.getUUID());
-            registerObject(key, (String) entry.getValue());
+            registerObject(bootstrapProperty.getService(), bootstrapProperty.getKey(), bootstrapProperty.getValue());
         }
-        props.clear();
     }
 
-    private void registerObjects(Properties props) throws Exception
+    private void registerObjects(List<BootstrapProperty> bootstrapProperties) throws Exception
     {
-        for (Map.Entry<Object, Object> entry : props.entrySet())
+        for (BootstrapProperty bootstrapProperty : bootstrapProperties)
         {
-            registerObject((String) entry.getKey(), (String) entry.getValue());
+            registerObject(bootstrapProperty.getService(), bootstrapProperty.getKey(), bootstrapProperty.getValue());
         }
-        props.clear();
     }
 
-    private void registerObject(String key, String value) throws Exception
+    private void registerObject(BootstrapPropertiesService service, String key, String value) throws Exception
     {
         ArtifactType artifactTypeParameterValue = ArtifactType.APP;
 
@@ -238,7 +269,7 @@ public abstract class AbstractRegistryBootstrap implements Initialisable, MuleCo
                 return;
             }
 
-            doRegisterObject(key, className, optional);
+            doRegisterObject(key, optional, service, className);
         }
         catch (InvocationTargetException itex)
         {
@@ -259,12 +290,12 @@ public abstract class AbstractRegistryBootstrap implements Initialisable, MuleCo
         }
     }
 
-    private void registerTransactionFactories(Map<String, String> singleTransactionFactories, MuleContext context) throws Exception
+    private void registerTransactionFactories(List<BootstrapProperty> singleTransactionFactories, MuleContext context) throws Exception
     {
-        for (Map.Entry<String, String> entry : singleTransactionFactories.entrySet())
+        for (BootstrapProperty bootstrapProperty : singleTransactionFactories)
         {
-            String transactionResourceClassNameProperties = entry.getValue();
-            String transactionFactoryClassName = entry.getKey();
+            String transactionResourceClassNameProperties = bootstrapProperty.getValue();
+            String transactionFactoryClassName = bootstrapProperty.getKey();
             boolean optional = false;
             // reset
             int x = transactionResourceClassNameProperties.indexOf(",");
@@ -276,7 +307,8 @@ public abstract class AbstractRegistryBootstrap implements Initialisable, MuleCo
             final String transactionResourceClassName = (x == -1 ? transactionResourceClassNameProperties : transactionResourceClassNameProperties.substring(0, x));
             try
             {
-                context.getTransactionFactoryManager().registerTransactionFactory(Class.forName(transactionResourceClassName), (TransactionFactory) Class.forName(transactionFactoryClassName).newInstance());
+                final Class<?> supportedType = bootstrapProperty.getService().forName(transactionResourceClassName);
+                context.getTransactionFactoryManager().registerTransactionFactory(supportedType, (TransactionFactory) bootstrapProperty.getService().instantiateClass(transactionFactoryClassName));
 
             }
             catch (NoClassDefFoundError ncdfe)
@@ -290,16 +322,16 @@ public abstract class AbstractRegistryBootstrap implements Initialisable, MuleCo
         }
     }
 
-    private void registerTransformers(Properties props) throws Exception
+    private void registerTransformers(List<BootstrapProperty> props) throws Exception
     {
         String transString;
         String name = null;
         String returnClassString;
         boolean optional = false;
 
-        for (Map.Entry<Object, Object> entry : props.entrySet())
+        for (BootstrapProperty bootstrapProperty : props)
         {
-            transString = (String) entry.getValue();
+            transString = bootstrapProperty.getValue();
             // reset
             Class<?> returnClass = null;
             returnClassString = null;
@@ -330,7 +362,7 @@ public abstract class AbstractRegistryBootstrap implements Initialisable, MuleCo
                     }
                     else
                     {
-                        returnClass = ClassUtils.loadClass(returnClassString, getClass());
+                        returnClass = bootstrapProperty.getService().forName(returnClassString);
                     }
                 }
 
@@ -364,7 +396,7 @@ public abstract class AbstractRegistryBootstrap implements Initialisable, MuleCo
 
     protected abstract void registerTransformers() throws MuleException;
 
-    protected abstract void doRegisterObject(String key, String className, boolean optional) throws Exception;
+    protected abstract void doRegisterObject(String key, boolean optional, BootstrapPropertiesService service, String className) throws Exception;
 
     private void throwExceptionIfNotOptional(boolean optional, Throwable t, String message) throws Exception
     {

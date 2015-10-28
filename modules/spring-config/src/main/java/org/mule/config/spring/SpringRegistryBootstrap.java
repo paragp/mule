@@ -15,15 +15,14 @@ import org.mule.api.transformer.DataType;
 import org.mule.api.transformer.Transformer;
 import org.mule.config.bootstrap.AbstractRegistryBootstrap;
 import org.mule.config.bootstrap.BootstrapObjectFactory;
+import org.mule.config.bootstrap.BootstrapPropertiesService;
 import org.mule.config.bootstrap.ClassPathRegistryBootstrapDiscoverer;
 import org.mule.config.bootstrap.SimpleRegistryBootstrap;
 import org.mule.config.spring.factories.BootstrapObjectFactoryBean;
 import org.mule.config.spring.factories.ConstantFactoryBean;
 import org.mule.transformer.TransformerUtils;
 import org.mule.transformer.types.DataTypeFactory;
-import org.mule.util.ClassUtils;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Map.Entry;
 
 import org.springframework.beans.BeansException;
@@ -147,12 +146,25 @@ public class SpringRegistryBootstrap extends AbstractRegistryBootstrap implement
     }
 
     @Override
-    protected void doRegisterObject(String key, String className, boolean optional) throws Exception
+    protected void doRegisterObject(String key, boolean optional, BootstrapPropertiesService service, String className) throws Exception
     {
         notifyIfOptional(key, optional);
 
-        Class<?> clazz = getClass(className);
-        doRegisterObject(key, clazz);
+        Class<?> clazz = service.forName(className);
+        BeanDefinitionBuilder builder;
+
+        if (BootstrapObjectFactory.class.isAssignableFrom(clazz))
+        {
+            final Object value = service.instantiateClass(className);
+            builder = BeanDefinitionBuilder.rootBeanDefinition(BootstrapObjectFactoryBean.class);
+            builder.addConstructorArgValue(value);
+        }
+        else
+        {
+            builder = BeanDefinitionBuilder.rootBeanDefinition(clazz);
+        }
+
+        doRegisterObject(key, builder);
     }
 
     private void notifyIfOptional(String key, boolean optional)
@@ -161,23 +173,6 @@ public class SpringRegistryBootstrap extends AbstractRegistryBootstrap implement
         {
             optionalObjectsController.registerOptionalKey(key);
         }
-    }
-
-    private void doRegisterObject(String key, Class<?> type) throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException
-    {
-        BeanDefinitionBuilder builder;
-
-        if (BootstrapObjectFactory.class.isAssignableFrom(type))
-        {
-            builder = BeanDefinitionBuilder.rootBeanDefinition(BootstrapObjectFactoryBean.class);
-            builder.addConstructorArgValue(ClassUtils.instanciateClass(type));
-        }
-        else
-        {
-            builder = BeanDefinitionBuilder.rootBeanDefinition(type);
-        }
-
-        doRegisterObject(key, builder);
     }
 
     private void doRegisterObject(String key, BeanDefinitionBuilder builder)
