@@ -94,6 +94,8 @@ public class DefaultMuleContextBuilder implements MuleContextBuilder
 
     protected BootstrapPropertiesServiceDiscoverer bootstrapDiscoverer;
 
+    protected ClassLoader executionClassLoader;
+
     /**
      * {@inheritDoc}
      */
@@ -116,9 +118,8 @@ public class DefaultMuleContextBuilder implements MuleContextBuilder
 
         muleContext.setLocalMuleClient(new DefaultLocalMuleClient(muleContext));
         muleContext.setExceptionListener(new DefaultSystemExceptionStrategy(muleContext));
+        muleContext.setExecutionClassLoader(getExecutionClassLoader());
         muleContext.setBootstrapPropertiesServiceDiscoverer(injectMuleContextIfRequired(getBootstrapPropertiesServiceDiscoverer(), muleContext));
-        //TODO(pablo.kraan): OSGi - this is wrong - context classLoader is the root app classlodear conating System + OSGi classes only
-        //muleContext.setExecutionClassLoader(Thread.currentThread().getContextClassLoader());
 
         JavaObjectSerializer defaultObjectSerializer = new JavaObjectSerializer();
         defaultObjectSerializer.setMuleContext(muleContext);
@@ -150,6 +151,11 @@ public class DefaultMuleContextBuilder implements MuleContextBuilder
     public void setNotificationManager(ServerNotificationManager notificationManager)
     {
         this.notificationManager = notificationManager;
+    }
+
+    public void setExecutionClassLoader(ClassLoader executionClassLoader)
+    {
+        this.executionClassLoader = executionClassLoader;
     }
 
     protected MuleConfiguration getMuleConfiguration()
@@ -359,7 +365,18 @@ public class DefaultMuleContextBuilder implements MuleContextBuilder
 
     protected BootstrapPropertiesServiceDiscoverer createBootstrapDiscoverer()
     {
-        //TODO(pablo.kraan): OSGi - check if can use muleContext's execution classlaoder instead
-        return new DefaultBootstrapPropertiesServiceDiscoverer(this.getClass().getClassLoader());
+        return new DefaultBootstrapPropertiesServiceDiscoverer(getExecutionClassLoader());
+    }
+
+    protected ClassLoader getExecutionClassLoader()
+    {
+        if (executionClassLoader != null)
+        {
+            return executionClassLoader;
+        }
+        else
+        {
+            return getClass().getClassLoader();
+        }
     }
 }
