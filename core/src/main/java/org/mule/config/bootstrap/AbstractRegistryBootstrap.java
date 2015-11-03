@@ -82,28 +82,7 @@ public abstract class AbstractRegistryBootstrap implements Initialisable, MuleCo
     public static final String SINGLE_TX = ".singletx.";
 
     protected ArtifactType supportedArtifactType = ArtifactType.APP;
-    protected final RegistryBootstrapDiscoverer discoverer;
     protected MuleContext muleContext;
-
-    /**
-     * Creates a default SimpleRegistryBootstrap using a {@link org.mule.config.bootstrap.ClassPathRegistryBootstrapDiscoverer}
-     * in order to get the Properties resources from the class path.
-     */
-    public AbstractRegistryBootstrap()
-    {
-        this(new ClassPathRegistryBootstrapDiscoverer());
-    }
-
-    /**
-     * Allows to specify a {@link org.mule.config.bootstrap.RegistryBootstrapDiscoverer} to discover the Properties
-     * resources to be used.
-     *
-     * @param discoverer
-     */
-    public AbstractRegistryBootstrap(RegistryBootstrapDiscoverer discoverer)
-    {
-        this.discoverer = discoverer;
-    }
 
     /**
      * {@inheritDoc}

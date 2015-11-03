@@ -9,11 +9,14 @@ package org.mule.config.bootstrap;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
+import org.mule.DefaultMuleContext;
 import org.mule.api.lifecycle.InitialisationException;
 import org.mule.api.transaction.TransactionFactory;
 import org.mule.tck.junit4.AbstractMuleContextTestCase;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
 import org.junit.Assert;
@@ -66,7 +69,18 @@ public class SimpleRegistryBootstrapTestCase extends AbstractMuleContextTestCase
         properties.put("jms.singletx.transaction.resource1", String.format("%s,optional)", TEST_TRANSACTION_FACTORY_CLASS));
         properties.put("test.singletx.transaction.factory1", FakeTransactionFactory.class.getName());
         properties.put("test.singletx.transaction.resource1", FakeTransactionResource.class.getName());
-        SimpleRegistryBootstrap simpleRegistryBootstrap = new SimpleRegistryBootstrap(new SinglePropertiesRegistryBootstrapDiscoverer(properties));
+
+        final BootstrapPropertiesServiceDiscoverer bootstrapPropertiesServiceDiscoverer = new BootstrapPropertiesServiceDiscoverer()
+        {
+            @Override
+            public List<BootstrapPropertiesService> discover()
+            {
+                return Collections.singletonList(new MuleBootstrapPropertiesService(this.getClass().getClassLoader(), properties));
+            }
+        };
+        ((DefaultMuleContext) muleContext).setBootstrapPropertiesServiceDiscoverer(bootstrapPropertiesServiceDiscoverer);
+
+        SimpleRegistryBootstrap simpleRegistryBootstrap = new SimpleRegistryBootstrap();
         simpleRegistryBootstrap.setSupportedArtifactType(artifactType);
         simpleRegistryBootstrap.setMuleContext(muleContext);
         simpleRegistryBootstrap.initialise();

@@ -32,16 +32,6 @@ import java.util.Map;
 public class SimpleRegistryBootstrap extends AbstractRegistryBootstrap
 {
 
-    public SimpleRegistryBootstrap()
-    {
-        super();
-    }
-
-    public SimpleRegistryBootstrap(RegistryBootstrapDiscoverer discoverer)
-    {
-        super(discoverer);
-    }
-
     @Override
     protected void doRegisterTransformer(String name, Class<?> returnClass, Class<? extends Transformer> transformerClass, String mime, boolean optional) throws Exception
     {

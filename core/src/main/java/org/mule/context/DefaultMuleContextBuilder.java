@@ -31,6 +31,8 @@ import org.mule.api.lifecycle.LifecycleManager;
 import org.mule.client.DefaultLocalMuleClient;
 import org.mule.config.DefaultMuleConfiguration;
 import org.mule.config.ImmutableThreadingProfile;
+import org.mule.config.bootstrap.BootstrapPropertiesServiceDiscoverer;
+import org.mule.config.bootstrap.DefaultBootstrapPropertiesServiceDiscoverer;
 import org.mule.config.i18n.Message;
 import org.mule.config.i18n.MessageFactory;
 import org.mule.context.notification.AsyncMessageNotification;
@@ -90,6 +92,8 @@ public class DefaultMuleContextBuilder implements MuleContextBuilder
 
     protected SplashScreen shutdownScreen;
 
+    protected BootstrapPropertiesServiceDiscoverer bootstrapDiscoverer;
+
     /**
      * {@inheritDoc}
      */
@@ -112,6 +116,7 @@ public class DefaultMuleContextBuilder implements MuleContextBuilder
 
         muleContext.setLocalMuleClient(new DefaultLocalMuleClient(muleContext));
         muleContext.setExceptionListener(new DefaultSystemExceptionStrategy(muleContext));
+        muleContext.setBootstrapPropertiesServiceDiscoverer(injectMuleContextIfRequired(getBootstrapPropertiesServiceDiscoverer(), muleContext));
         //TODO(pablo.kraan): OSGi - this is wrong - context classLoader is the root app classlodear conating System + OSGi classes only
         //muleContext.setExecutionClassLoader(Thread.currentThread().getContextClassLoader());
 
@@ -332,5 +337,29 @@ public class DefaultMuleContextBuilder implements MuleContextBuilder
                ", workManager=" + workManager +
                ", workListener=" + workListener +
                ", notificationManager=" + notificationManager + "}";
+    }
+
+
+    public void setBootstrapPropertiesServiceDiscoverer(BootstrapPropertiesServiceDiscoverer bootstrapDiscoverer)
+    {
+        this.bootstrapDiscoverer = bootstrapDiscoverer;
+    }
+
+    public BootstrapPropertiesServiceDiscoverer getBootstrapPropertiesServiceDiscoverer()
+    {
+        if (bootstrapDiscoverer != null)
+        {
+            return bootstrapDiscoverer;
+        }
+        else
+        {
+            return createBootstrapDiscoverer();
+        }
+    }
+
+    protected BootstrapPropertiesServiceDiscoverer createBootstrapDiscoverer()
+    {
+        //TODO(pablo.kraan): OSGi - check if can use muleContext's execution classlaoder instead
+        return new DefaultBootstrapPropertiesServiceDiscoverer(this.getClass().getClassLoader());
     }
 }

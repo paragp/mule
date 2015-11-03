@@ -16,7 +16,6 @@ import org.mule.api.transformer.Transformer;
 import org.mule.config.bootstrap.AbstractRegistryBootstrap;
 import org.mule.config.bootstrap.BootstrapObjectFactory;
 import org.mule.config.bootstrap.BootstrapPropertiesService;
-import org.mule.config.bootstrap.ClassPathRegistryBootstrapDiscoverer;
 import org.mule.config.bootstrap.SimpleRegistryBootstrap;
 import org.mule.config.spring.factories.BootstrapObjectFactoryBean;
 import org.mule.config.spring.factories.ConstantFactoryBean;
@@ -46,11 +45,6 @@ public class SpringRegistryBootstrap extends AbstractRegistryBootstrap implement
 
     private OptionalObjectsController optionalObjectsController;
     private BeanDefinitionRegistry beanDefinitionRegistry;
-
-    public SpringRegistryBootstrap()
-    {
-        super(new ClassPathRegistryBootstrapDiscoverer());
-    }
 
     @Override
     public void setBeanFactory(BeanFactory beanFactory) throws BeansException

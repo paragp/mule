@@ -8,6 +8,7 @@ package org.mule.config.bootstrap;
 
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import org.mule.DefaultMuleContext;
 import org.mule.api.MuleContext;
 import org.mule.api.MuleException;
 import org.mule.api.config.ConfigurationBuilder;
@@ -21,6 +22,7 @@ import org.mule.tck.junit4.AbstractMuleContextTestCase;
 import org.mule.transformer.AbstractDiscoverableTransformer;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -40,7 +42,17 @@ public class SimpleRegistryBootstrapTransformersTest extends AbstractMuleContext
         TestTransformerResolver transformerResolver = new TestTransformerResolver();
         muleContext.getRegistry().registerObject("testTransformerResolver", transformerResolver);
 
-        SimpleRegistryBootstrap registryBootstrap = new SimpleRegistryBootstrap(new SinglePropertiesRegistryBootstrapDiscoverer(properties));
+        final BootstrapPropertiesServiceDiscoverer bootstrapPropertiesServiceDiscoverer = new BootstrapPropertiesServiceDiscoverer()
+        {
+            @Override
+            public List<BootstrapPropertiesService> discover()
+            {
+                return Collections.singletonList(new MuleBootstrapPropertiesService(this.getClass().getClassLoader(), properties));
+            }
+        };
+        ((DefaultMuleContext) muleContext).setBootstrapPropertiesServiceDiscoverer(bootstrapPropertiesServiceDiscoverer);
+
+        SimpleRegistryBootstrap registryBootstrap = new SimpleRegistryBootstrap();
         registryBootstrap.setMuleContext(muleContext);
         registryBootstrap.initialise();
 
