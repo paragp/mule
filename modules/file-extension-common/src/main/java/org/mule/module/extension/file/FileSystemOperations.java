@@ -7,21 +7,25 @@
 package org.mule.module.extension.file;
 
 import org.mule.api.MuleEvent;
+import org.mule.extension.annotation.api.ContentMetadataParameters;
 import org.mule.extension.annotation.api.Operation;
 import org.mule.extension.annotation.api.param.Connection;
 import org.mule.extension.annotation.api.param.Optional;
+import org.mule.extension.api.runtime.ContentMetadata;
+import org.mule.extension.api.runtime.ContentType;
 import org.mule.transport.NullPayload;
 
 public class FileSystemOperations
 {
 
     @Operation
+    @ContentMetadataParameters
     public FilePayload read(@Connection FileSystem fileSystem,
                             String path,
-                            @Optional(defaultValue = "false") boolean lock)
+                            @Optional(defaultValue = "false") boolean lock,
+                            ContentMetadata contentMetadata)
     {
-        //TODO: support encoding and mimeType
-        return fileSystem.read(path, lock);
+        return fileSystem.read(path, lock, contentMetadata);
     }
 
     @Operation
@@ -31,14 +35,15 @@ public class FileSystemOperations
                       @Optional(defaultValue = "OVERWRITE") FileWriteMode mode,
                       @Optional(defaultValue = "false") boolean lock,
                       @Optional(defaultValue = "true") boolean createParentFolder,
-                      MuleEvent event)
+                      MuleEvent event,
+                      ContentType contentType)
     {
         if (content == null || content instanceof NullPayload)
         {
             throw new IllegalArgumentException("Cannot write a null content");
         }
 
-        fileSystem.write(path, content, mode, event, lock, createParentFolder);
+        fileSystem.write(path, content, mode, event, lock, createParentFolder, contentType);
     }
 
     @Operation

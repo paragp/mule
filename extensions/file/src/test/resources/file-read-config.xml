@@ -12,7 +12,11 @@
     </flow>
 
     <flow name="readWithLock">
-        <file:read path="files/hello.txt" lock="true" />
+        <file:read path="files/hello.json" lock="true" />
+    </flow>
+
+    <flow name="readWithForcedMimeType">
+        <file:read path="#[path]" outputMimeType="test/test"/>
     </flow>
 
 </mule>

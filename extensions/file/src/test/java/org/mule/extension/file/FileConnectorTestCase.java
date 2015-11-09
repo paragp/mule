@@ -30,6 +30,8 @@ public abstract class FileConnectorTestCase extends ExtensionFunctionalTestCase
 {
 
     protected static final String HELLO_WORLD = "Hello World!";
+    protected static final String HELLO_FILE_NAME = "hello.json";
+    protected static final String HELLO_PATH = "files/" + HELLO_FILE_NAME;
 
     @ClassRule
     public static TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -69,18 +71,21 @@ public abstract class FileConnectorTestCase extends ExtensionFunctionalTestCase
         }
     }
 
-    protected LocalFilePayload readHelloWorld() throws Exception
+    protected MuleEvent readHelloWorld() throws Exception
     {
-        return readPath("files/hello.txt");
+        return getPath(HELLO_PATH);
     }
 
     protected LocalFilePayload readPath(String path) throws Exception
     {
+        return (LocalFilePayload) getPath(path).getMessage().getPayload();
+    }
+
+    private MuleEvent getPath(String path) throws Exception
+    {
         MuleEvent event = getTestEvent("");
         event.setFlowVariable("path", path);
-        MuleEvent response = runFlow("read", event);
-
-        return (LocalFilePayload) response.getMessage().getPayload();
+        return runFlow("read", event);
     }
 
     protected String readPathAsString(String path) throws Exception
@@ -101,7 +106,7 @@ public abstract class FileConnectorTestCase extends ExtensionFunctionalTestCase
     protected File createHelloWorldFile() throws IOException
     {
         File folder = temporaryFolder.newFolder("files");
-        File hello = new File(folder, "hello.txt");
+        File hello = new File(folder, HELLO_FILE_NAME);
         FileUtils.write(hello, HELLO_WORLD);
 
         return hello;

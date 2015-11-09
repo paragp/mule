@@ -50,7 +50,7 @@ public class FileRenameTestCase extends FileConnectorTestCase
         assertExists(false, origin);
         assertExists(true, expected);
 
-        assertThat(readPathAsString(expected.getAbsolutePath() + "/hello.txt"), is(HELLO_WORLD));
+        assertThat(readPathAsString(String.format("%s/%s", expected.getAbsolutePath(), HELLO_FILE_NAME)), is(HELLO_WORLD));
     }
 
     @Test

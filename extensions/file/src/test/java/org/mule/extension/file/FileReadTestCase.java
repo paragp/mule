@@ -10,12 +10,12 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mule.transformer.types.MimeTypes.JSON;
+import org.mule.api.MuleEvent;
 import org.mule.extension.file.internal.LocalFilePayload;
 import org.mule.module.extension.file.FilePayload;
 import org.mule.util.IOUtils;
 
-import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,7 +24,6 @@ import java.nio.file.attribute.FileTime;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 public class FileReadTestCase extends FileConnectorTestCase
@@ -46,9 +45,22 @@ public class FileReadTestCase extends FileConnectorTestCase
     @Test
     public void read() throws Exception
     {
-        LocalFilePayload payload = readHelloWorld();
+        MuleEvent response = readHelloWorld();
+
+        assertThat(response.getMessage().getDataType().getMimeType(), is(JSON));
+
+        LocalFilePayload payload = (LocalFilePayload) response.getMessage().getPayload();
         assertThat(payload.isLocked(), is(false));
         assertThat(IOUtils.toString(payload.getContent()), is(HELLO_WORLD));
+    }
+
+    @Test
+    public void readWithForcedMimeType() throws Exception
+    {
+        MuleEvent event = getTestEvent("");
+        event.setFlowVariable("path", HELLO_PATH);
+        event = runFlow("readWithForcedMimeType", event);
+        assertThat(event.getMessage().getDataType().getMimeType(), equalTo("test/test"));
     }
 
     @Test
@@ -86,8 +98,8 @@ public class FileReadTestCase extends FileConnectorTestCase
     @Test
     public void getProperties() throws Exception
     {
-        FilePayload filePayload = readHelloWorld();
-        Path file = Paths.get(baseDir.getValue()).resolve("files/hello.txt");
+        FilePayload filePayload = (FilePayload) readHelloWorld().getMessage().getPayload();
+        Path file = Paths.get(baseDir.getValue()).resolve(HELLO_PATH);
         assertExists(true, file.toFile());
 
         BasicFileAttributes attributes = Files.readAttributes(file, BasicFileAttributes.class);

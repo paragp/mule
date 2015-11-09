@@ -24,7 +24,6 @@ import java.time.ZoneId;
 
 public final class LocalFilePayload implements FilePayload, Closeable
 {
-
     private final Path path;
     private final PathLock lock;
 

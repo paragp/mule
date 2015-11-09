@@ -48,7 +48,6 @@ public class FileWriteTestCase extends FileConnectorTestCase
         doWriteOnNotExistingFile(FileWriteMode.CREATE_NEW);
     }
 
-
     @Test
     public void appendOnExistingFile() throws Exception
     {

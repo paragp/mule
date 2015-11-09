@@ -7,13 +7,21 @@
 package org.mule.module.extension.file;
 
 import org.mule.api.MuleEvent;
+import org.mule.extension.api.runtime.ContentMetadata;
+import org.mule.extension.api.runtime.ContentType;
 
 public interface FileSystem
 {
 
-    FilePayload read(String filePath, boolean lock);
+    FilePayload read(String filePath, boolean lock, ContentMetadata contentMetadata);
 
-    void write(String filePath, Object content, FileWriteMode mode, MuleEvent event, boolean lock, boolean createParentFolder);
+    void write(String filePath,
+               Object content,
+               FileWriteMode mode,
+               MuleEvent event,
+               boolean lock,
+               boolean createParentFolder,
+               ContentType contentType);
 
     void copy(String sourcePath, String targetDirectory, boolean overwrite, boolean createParentFolder);
 

@@ -11,6 +11,8 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.mule.config.i18n.MessageFactory.createStaticMessage;
 import org.mule.api.MuleEvent;
 import org.mule.api.MuleRuntimeException;
+import org.mule.extension.api.runtime.ContentMetadata;
+import org.mule.extension.api.runtime.ContentType;
 import org.mule.extension.file.internal.lock.DefaultPathLock;
 import org.mule.extension.file.internal.lock.NullPathLock;
 import org.mule.extension.file.internal.lock.PathLock;
@@ -31,6 +33,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
+import javax.activation.MimetypesFileTypeMap;
+
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +50,7 @@ public final class LocalFileSystem implements FileSystem
     }
 
     private final FileConnector config;
+    private final MimetypesFileTypeMap mimetypesFileTypeMap = new MimetypesFileTypeMap();
 
     public LocalFileSystem(FileConnector config)
     {
@@ -53,7 +58,7 @@ public final class LocalFileSystem implements FileSystem
     }
 
     @Override
-    public FilePayload read(String filePath, boolean lock)
+    public FilePayload read(String filePath, boolean lock, ContentMetadata contentMetadata)
     {
         Path path = getExistingPath(filePath);
         if (Files.isDirectory(path))
@@ -61,19 +66,23 @@ public final class LocalFileSystem implements FileSystem
             throw new IllegalArgumentException(format("Cannot read path '%s' since it's a directory", path));
         }
 
+        FilePayload filePayload;
         if (lock)
         {
-            return new LocalFilePayload(path, lock(path));
+            filePayload = new LocalFilePayload(path, lock(path));
         }
         else
         {
             verifyNotLocked(path);
-            return new LocalFilePayload(path);
+            filePayload = new LocalFilePayload(path);
         }
+
+        updateContentMetadata(filePayload, contentMetadata);
+        return filePayload;
     }
 
     @Override
-    public void write(String filePath, Object content, FileWriteMode mode, MuleEvent event, boolean lock, boolean createParentFolder)
+    public void write(String filePath, Object content, FileWriteMode mode, MuleEvent event, boolean lock, boolean createParentFolder, ContentType contentType)
     {
         Path path = getPath(filePath);
 
@@ -300,10 +309,23 @@ public final class LocalFileSystem implements FileSystem
         }
     }
 
-
     private RuntimeException pathNotFoundException(Path path)
     {
         return new IllegalArgumentException(format("Path '%s' doesn't exists", path));
     }
 
+    private void updateContentMetadata(FilePayload filePayload, ContentMetadata contentMetadata)
+    {
+        if (!contentMetadata.isOutputModifiable())
+        {
+            return;
+        }
+
+        String presumedMimeType = mimetypesFileTypeMap.getContentType(filePayload.getPath());
+        ContentType outputContentType = contentMetadata.getOutputContentType();
+        if (presumedMimeType != null)
+        {
+            contentMetadata.setOutputContentType(new ContentType(outputContentType.getEncoding(), presumedMimeType));
+        }
+    }
 }
