@@ -40,9 +40,8 @@ public interface ConnectionManager
      * @param connectionProvider the {@link ConnectionProvider} that produces the connections
      * @param <Config>           the generic type of the {@code config}
      * @param <Connection>       the generic type of the connections to be produced
-     * @return a {@link ManagedConnection}
      */
-    <Config, Connection> ManagedConnection<Connection> bind(Config config, ConnectionProvider<Config, Connection> connectionProvider);
+    <Config, Connection> void bind(Config config, ConnectionProvider<Config, Connection> connectionProvider);
 
     /**
      * Breaks the binding that was previously produced by invoking {@link #bind(Object, ConnectionProvider)} with

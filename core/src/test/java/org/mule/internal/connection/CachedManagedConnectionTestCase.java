@@ -32,7 +32,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 @SmallTest
 @RunWith(MockitoJUnitRunner.class)
-public class LazyCachedManagedConnectionTestCase extends AbstractMuleTestCase
+public class CachedManagedConnectionTestCase extends AbstractMuleTestCase
 {
 
     private Apple config = new Apple();
@@ -45,13 +45,13 @@ public class LazyCachedManagedConnectionTestCase extends AbstractMuleTestCase
     @Mock
     private MuleContext muleContext;
 
-    private LazyCachedManagedConnection<Apple, Banana> managedConnection;
+    private CachedManagedConnection<Apple, Banana> managedConnection;
 
     @Before
     public void before() throws Exception
     {
         when(connectionProvider.connect(config)).thenReturn(connection);
-        managedConnection = new LazyCachedManagedConnection<>(config, connectionProvider, muleContext);
+        managedConnection = new CachedManagedConnection<>(config, connectionProvider, muleContext);
     }
 
     @Test

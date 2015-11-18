@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @param <Connection> the generic type of the connection being wrapped
  * @since 4.0
  */
-final class LazyCachedManagedConnection<Config, Connection> implements ManagedConnectionAdapter<Connection>
+final class CachedManagedConnection<Config, Connection> implements ManagedConnectionAdapter<Connection>
 {
 
     private final Config config;
@@ -42,10 +42,10 @@ final class LazyCachedManagedConnection<Config, Connection> implements ManagedCo
      * Creates a new instance
      *
      * @param config             the {@code Config} that owns the wrapped connection
-     * @param connectionProvider the {@link ConnectionProvider} to be used to managed the connetion
+     * @param connectionProvider the {@link ConnectionProvider} to be used to managed the connection
      * @param muleContext        the owning {@link MuleContext}
      */
-    public LazyCachedManagedConnection(Config config, ConnectionProvider<Config, Connection> connectionProvider, MuleContext muleContext)
+    public CachedManagedConnection(Config config, ConnectionProvider<Config, Connection> connectionProvider, MuleContext muleContext)
     {
         this.config = config;
         this.connectionProvider = connectionProvider;
@@ -117,7 +117,7 @@ final class LazyCachedManagedConnection<Config, Connection> implements ManagedCo
         writeLock.lock();
         try
         {
-            if (connectionProvider != null)
+            if (connectionProvider != null && connection != null)
             {
                 connectionProvider.disconnect(connection);
             }

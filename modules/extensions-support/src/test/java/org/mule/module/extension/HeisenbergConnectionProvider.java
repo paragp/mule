@@ -6,8 +6,11 @@
  */
 package org.mule.module.extension;
 
+import org.mule.api.config.PoolingProfile;
 import org.mule.api.connection.ConnectionException;
 import org.mule.api.connection.ConnectionProvider;
+import org.mule.api.connection.ManagementStrategy;
+import org.mule.api.connection.ManagementStrategyFactory;
 import org.mule.extension.annotation.api.Parameter;
 import org.mule.extension.annotation.api.param.Optional;
 
@@ -30,5 +33,11 @@ public class HeisenbergConnectionProvider implements ConnectionProvider<Heisenbe
     public void disconnect(HeisenbergConnection heisenbergConnection)
     {
 
+    }
+
+    @Override
+    public ManagementStrategy<HeisenbergConnection> getManagementStrategy(ManagementStrategyFactory managementStrategyFactory)
+    {
+        return managementStrategyFactory.supportsPooling(new PoolingProfile());
     }
 }

@@ -22,13 +22,11 @@ import org.mule.api.connection.ManagedConnection;
 import org.mule.api.connector.ConnectionManager;
 import org.mule.module.extension.internal.runtime.OperationContextAdapter;
 import org.mule.module.extension.internal.runtime.connector.petstore.PetStoreClient;
-import org.mule.module.extension.internal.runtime.connector.petstore.PetStoreConnectionProvider;
 import org.mule.module.extension.internal.runtime.connector.petstore.PetStoreConnector;
+import org.mule.module.extension.internal.runtime.connector.petstore.SimplePetStoreConnectionProvider;
 import org.mule.tck.junit4.AbstractMuleContextTestCase;
-import org.mule.util.concurrent.Latch;
 
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -50,7 +48,7 @@ public class ConnectionInterceptorTestCase extends AbstractMuleContextTestCase
     @Mock
     private PetStoreConnector config;
 
-    private PetStoreConnectionProvider connectionProvider = spy(new PetStoreConnectionProvider());
+    private SimplePetStoreConnectionProvider connectionProvider = spy(new SimplePetStoreConnectionProvider());
     private ConnectionInterceptor interceptor;
 
     @Before
@@ -88,36 +86,6 @@ public class ConnectionInterceptorTestCase extends AbstractMuleContextTestCase
         PetStoreClient connection2 = getConnection();
 
         assertThat(connection1, is(sameInstance(connection2)));
-        verify(connectionProvider).connect(config);
-    }
-
-    @Test
-    public void getConnectionConcurrentlyAndConnectOnlyOnce() throws Exception
-    {
-        PetStoreClient mockConnection = mock(PetStoreClient.class);
-        connectionProvider = mock(PetStoreConnectionProvider.class);
-        before();
-
-        Latch latch = new Latch();
-        when(connectionProvider.connect(config)).thenAnswer(invocation -> {
-            new Thread(() -> {
-                try
-                {
-                    latch.release();
-                    getConnection();
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }).start();
-
-            return mockConnection;
-        });
-
-        PetStoreClient connection = getConnection();
-        assertThat(latch.await(5, TimeUnit.SECONDS), is(true));
-        assertThat(connection, is(sameInstance(mockConnection)));
         verify(connectionProvider).connect(config);
     }
 
